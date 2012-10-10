@@ -51,8 +51,12 @@ class aspUnit
 		set AddTestCase = testCase
 	end function
 	
-	public sub Run()
-	end sub
+	public function Run()
+		dim result
+		set result = new aspUnitTestResult
+		
+		set Run = result
+	end function
 end class
 
 
@@ -129,5 +133,134 @@ class aspUnitTestMethod
 	public sub AssertIsA(byref obj, byval typeName, byval message)
 		
 	end sub
+end class
+
+
+class aspUnitTestResult
+	' fields
+	dim cTests, cPassed, cFailed, cErrors
+	
+	
+	' properties
+	public property get Tests()
+		set Tests = cTests
+	end property
+	
+	public property get Passed()
+		set Passed = cPassed
+	end property
+	
+	public property get Failed()
+		set Failed = cFailed
+	end property
+	
+	public property get Errors()
+		set Errors = cErrors
+	end property
+	
+	
+	' constructor and desctructor
+	private sub class_initialize()
+		set cTests = new aspUnitCollection
+		set cPassed = new aspUnitCollection
+		set cFailed = new aspUnitCollection
+		set cErrors = new aspUnitCollection
+	end sub
+	
+	private sub class_terminate()
+		cTests.clear()
+		cPassed.clear()
+		cFailed.clear()
+		cErrors.clear()
+	end sub
+end class
+
+
+class aspUnitCollection
+	' fields
+	dim aCollection()
+	
+	
+	' properties
+	public default property get Collection()
+		Collection = aCollection
+	end property
+
+	public property get Count()
+		Count = ubound(aCollection) + 1
+	end property
+	
+	
+	' constructor
+	private sub class_initialize()
+		redim aCollection(-1)
+	end sub
+	
+	private sub class_terminate()
+		Clear
+	end sub
+	
+	' public methods
+	public sub Add(byref value)
+		redim preserve aCollection(ubound(aCollection) + 1)
+		if isobject(value) then
+			set aCollection(ubound(aCollection)) = value
+		else
+			aCollection(ubound(aCollection)) = value
+		end if
+	end sub
+	
+	public function Remove(obj)
+		dim i, index, total, result
+		i = 0
+		total = ubound(aCollection)
+		result = false
+		
+		index = getIndex(obj)
+		
+		' If the object was found
+		if index >= 0 then
+			'Destroy the object
+			set aCollection(index) = nothing
+			
+			' Shifts the objecs above this index one index less
+			for i = index to total
+				set aCollection(i) = aCollection(i + 1)
+			next
+			
+			' Destroy the las item to be removed
+			set aCollection(total) = nothing
+			
+			' Shorten the array, removing the last item
+			redim preserve aCollection(total - 1)
+			
+			result = true
+		End If
+		
+		Remove = result
+	end function	
+	
+	public sub Clear()
+		for each obj in aCollection
+			Remove obj
+		next
+	end sub
+	
+	' private methods
+	private function getIndex(obj)
+		dim i, index
+		index = -1
+		
+		do while i < total
+			if aCollection(i) = obj then
+				index = i
+				exit do
+			end if
+			
+			i = i + 1
+		loop
+		
+		getIndex = index
+	end function
 end class
 %>

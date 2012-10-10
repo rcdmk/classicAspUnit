@@ -15,7 +15,7 @@ end function
 
 
 ' Tests
-dim usersDB, testContext, result
+dim usersDB, testContext, results
 
 set testContext = new aspUnit
 
@@ -43,7 +43,7 @@ testMethod.AssertIsA usersDB, "testDB", ""
 
 test.Teardown("testTeardown")
 
-result = testContext.run
+set results = testContext.run
 
 set usersDB = nothing
 set testContext = nothing
@@ -58,7 +58,7 @@ set testContext = nothing
 </head>
 <body>
 	<h1>Classic ASP Unit Testing Framework</h1>
-	<h2>Tests: <%= result.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
+	<h2>Tests: <%= results.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
 	
 	
 </body>
