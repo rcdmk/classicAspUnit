@@ -19,26 +19,43 @@ table {
 }
 
 th, td {
-	padding: 2px;
+	padding: 3px;
 }
 
 th {
 	text-align: left;
 	background-color: #999;
 	color: #fff;
+	font-size: 16px;
+}
+
+.right {
+	text-align: right;
+}
+
+.indent {
+	width: 30px;
+	background-color: #DDD;
+}
+
+.title {
+	font-weight: bold;
 }
 
 .subtitle {
 	background-color: #DDD;
+	font-weight: bold;
 }
 
 .status {
 	width: 150px;
 	text-align: right;
+	color: #fff;
 }
 
 .Inconclusive {
 	background-color: #EEEE00;
+	color: #333;
 }
 
 .Passed {
@@ -47,9 +64,8 @@ th {
 
 .Failed {
 	background-color: #AA0000;
-	color: #fff;
 }
 
 .Error {
-	background-color: #AA6600;
+	background-color: #EE9900;
 }

@@ -30,29 +30,29 @@ sub testTeardown()
 end sub
 
 
-testSetup
+testSetup()
 
-dim otest
-set otest = testContext.addTestCase("User CRUD")
+dim oTest
+set oTest = testContext.addTestCase("User Administration")
 
-otest.Setup("testSetup")
-otest.Teardown("testTeardown")
+'oTest.Setup("testSetup")
+'oTest.Teardown("testTeardown")
 
 ' #####
 dim oTestMethod
-set oTestMethod = otest.addTest("UserDB is a testDB instance")
+set oTestMethod = oTest.addTest("UserDB is a testDB instance")
 
 oTestMethod.AssertExists usersDB, ""
 oTestMethod.AssertIsA usersDB, "testDB", ""
 
 
 ' #####
-set oTestMethod = otest.addTest("UserDB's Table Name is set to users")
+set oTestMethod = oTest.addTest("UserDB's Table Name is set to users")
 oTestMethod.AssertEquals usersDB.TableName, "users", ""
 
 
 ' #####
-set oTestMethod = otest.addTest("UserDB adds a user")
+set oTestMethod = oTest.addTest("UserDB adds a user")
 
 dim oldCount, newUser
 oldCount = usersDB.Count
@@ -61,13 +61,29 @@ newUser = createUser(1, "Jhon", "jhon@domain.com")
 
 usersDB.Add newUser
 
-oTestMethod.AssertEquals usersDB.Count, oldCount + 2, ""
+oTestMethod.AssertEquals usersDB.Count, oldCount + 1, ""
 
+' #####
+set oTestMethod = oTest.addTest("UserDB returns the added user")
+
+newUser = createUser(2, "Joe", "joe@domain.com")
+
+usersDB.Add newUser
+
+' usersDB.GetOne accepts the record index as a parameter
+oTestMethod.AssertEquals usersDB.GetOne(1), newUser, ""
+
+
+set oTest = testContext.addTestCase("User Login")
+
+
+testTeardown()
 
 set results = testContext.run
+results.Update
 
 set oTestMethod = nothing
-set otest = nothing
+set oTest = nothing
 set usersDB = nothing
 set testContext = nothing
 
@@ -91,28 +107,55 @@ set testCases = results.TestCases
 	<table>
 		<tr>
 			<th colspan="3">Test Cases</th>
+			<th class="right">Status</th>
 		</tr>
 		<%
-		for each testCase in testCases.Collection
-			%>
-			<tr>
-				<td colspan="2"><%= testCase.Name %></td>
-				<td class="status <%= testCase.Status %>"><%= testCase.Status %></td>
-			</tr>
-			<tr>
-				<td colspan="3" class="subtitle">Tests:</td>
-			</tr>
-			<%
-			for each test in testCase.Tests.Items
+		if testCases.Count > 0 then
+			for each testCase in testCases.Collection
+				%>
+				<tr class="title">
+					<td colspan="3"><%= testCase.Name %></td>
+					<td class="status <%= testCase.Status %>"><%= testCase.Status %></td>
+				</tr>
+				<tr>
+					<td class="indent">&nbsp;</td>
+					<td colspan="3" class="subtitle">Tests</td>
+				</tr>
+				<%
+				if testCase.Tests.Count > 0 then
+					for each test in testCase.Tests.Items
+						%>
+						<tr>
+							<td class="indent">&nbsp;</td>
+							<td><%= test.Name %></td>
+							<td><%= test.Output %></td>
+							<td class="status <%= test.Status %>"><%= test.Status %></td>
+						</tr>
+						<%
+					next
+				else
+					%>
+					<tr>
+						<td class="indent">&nbsp;</td>
+						<td colspan="2">No tests</td>
+						<td class="status Inconclusive">Inconclusive</td>
+					</tr>
+					<%
+				end if
 				%>
 				<tr>
-					<td><%= test.Name %></td>
-					<td><%= test.Output %></td>
-					<td class="status <%= test.Status %>"><%= test.Status %></td>
+					<td colspan="4" class="indent">&nbsp;</td>
 				</tr>
 				<%
 			next
-		next
+		else
+			%>
+			<tr>
+				<td colspan="3">No test cases</td>
+				<td>&nbsp;</td>
+			</tr>
+			<%
+		end if
 		%>
 	</table>	
 </body>

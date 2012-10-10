@@ -142,22 +142,43 @@ class aspUnitTestCase
 		set AddTest = test
 	end function
 	
+	
 	public sub Run()
-		dim passed
+		dim passed, testResult
 		passed = false
 		
 		if dTests.Count > 0 then
 			sStatus = "Passed"
 			
+			'on error resume next
+			
 			for each test in dTests.Items
-				execute setupCode
+				if setupCode <> "" then execute setupCode
 				
-				if not test.Run() then
-					sStatus = "Failed"
+				if test.Assertions.Count > 0 then
+					testResult = test.Run()
+					
+					if isnull(testResult) then
+						sStatus = "Error"
+						
+					elseif not testResult then
+						sStatus = "Failed"
+					end if
+					
+				elseif sStatus <> "Failed" then
+					sStatus = "Inconclusive"
 				end if
 				
-				execute tearDowncode
+				if tearDowncode <> "" then execute tearDowncode
+				
+				if err <> 0 then
+					sStatus = "Error"
+					
+					err.clear
+				end if
 			next
+			
+			on error goto 0
 		end if
 	end sub
 end class
@@ -198,6 +219,10 @@ class aspUnitTestMethod
 		Output = sOutput
 	end property
 
+	public property get Assertions()
+		set Assertions = cAssertions
+	end property
+	
 	
 	' constructor and destructor
 	private sub class_initialize()
@@ -231,21 +256,32 @@ class aspUnitTestMethod
 	
 	
 	public function Run()
-		dim assertion, passed, msg
+		dim assertion, assertionResult, passed, msg
 		passed = false
+		
+		'on error resume next
 		
 		if cAssertions.Count > 0 then
 			passed = true
 			sStatus = "Passed"
 			
 			for each assertion in cAssertions.Collection
-				if not assertion.Run() then
+				assertionResult = assertion.Run()
+				
+				if err.number <> 0 then
+					passed = null
+					sStatus = "Error"
+					cErrors.Add Err.Source & ": " & Err.Description
+					err.clear
+				elseif not assertionResult then
 					passed = false
 					sStatus = "Failed"
 					cErrors.Add assertion.Message
 				end if
 			next
 		end if
+		
+		on error goto 0
 		
 		Run = passed
 	end function
@@ -283,7 +319,7 @@ class aspUnitTestResult
 	
 	' properties
 	public property get Tests()
-		Tests = cTestCases.Count
+		Tests = iTests
 	end property
 	
 	public property get Passed()
@@ -315,6 +351,29 @@ class aspUnitTestResult
 	private sub class_terminate()
 		cTestCases.clear()
 		set cTestCases = nothing
+	end sub
+	
+	
+	' public methods
+	public sub Update()
+		dim testCase, test
+		
+		for each testCase in cTestCases.Collection
+			for each test in testCase.Tests.Items
+				iTests = iTests + 1
+				
+				select case test.Status
+					case "Passed"
+						iPassed = iPassed + 1
+						
+					case "Failed"
+						iFailed = iFailed + 1
+						
+					case "Error"
+						iErrors = iErrors + 1
+				end select
+			next
+		next
 	end sub
 end class
 
@@ -506,9 +565,30 @@ class aspUnitAssertion
 				end if
 			
 			case AU_ASSERT_EQUALS:
-				if oObj1 = oObj2 then
+				if isObject(oObj1) or isObject(oObj2) then
+					if isObject(oObj1) and isObject(oObj2) then
+						if oObj1 is oObj2 then passed = true
+					end if
+				
+				elseif isArray(oObj1) or isObject(oObj2) then
+					if isArray(oObj1) and isObject(oObj2) then
+						if ubound(oObj1) = ubound(oObj2) then
+							dim i, tmp
+							tmp = false
+							
+							for i = 0 to ubound(oObj1)
+								if oObj1 = oObj2 then tmp = true
+							next
+							
+							if tmp = true then passed = true
+						end if
+					end if
+					
+				elseif oObj1 = oObj2 then
 					passed = true
-				else
+				end if
+				
+				if not passed then
 					if sMessage = "" or isnull(sMessage) then
 						msg = val1 & " is not equals " & val2
 					else
@@ -526,18 +606,57 @@ class aspUnitAssertion
 	
 	
 	private function objectValue(byref obj)
-		dim name
+		dim name, result
 		name = typeName(obj)
 		
 		if isObject(obj) or name = "Empty" then
-			objectValue = name
+			result = name
 			
-		elseif name = "Array" then
-			objectValue = "[" & join(obj, ", ") & "]"
-		
+		elseif name = "Variant()" then
+			dim dimensions, i, j
+			dimensions = numDimensions(obj)
+			
+			result = "["
+			for i = 1 to dimensions
+				if i > 1 then result = result & ", "
+				
+				result = result & "["
+
+				for j = 0 to ubound(obj, i)
+					if j > 0 then result = result & ", "
+					
+					if dimensions > 1 then
+						'result = result & objectValue(obj(i - 1, j))
+					else
+						result = result & objectValue(obj(j))
+					end if
+				next
+				
+				if dimensions > 1 then result = result & "]"
+			next
+			
+			result = result & "]"
+			
 		else
-			objectValue = obj
+			result = obj
 		end if
+		
+		objectValue = result
+	end function
+	
+	private function NumDimensions(byref arr) 
+		dim dimensions
+		dimensions = 0 
+		
+		on error resume next
+		
+		do while err.number = 0
+			dimensions = dimensions + 1
+			ubound arr, dimensions
+		loop
+		on error goto 0
+		
+		NumDimensions = dimensions - 1
 	end function
 end class
 %>
