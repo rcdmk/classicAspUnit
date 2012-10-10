@@ -150,7 +150,7 @@ class aspUnitTestCase
 		if dTests.Count > 0 then
 			sStatus = "Passed"
 			
-			'on error resume next
+			on error resume next
 			
 			for each test in dTests.Items
 				if setupCode <> "" then execute setupCode
@@ -259,7 +259,7 @@ class aspUnitTestMethod
 		dim assertion, assertionResult, passed, msg
 		passed = false
 		
-		'on error resume next
+		on error resume next
 		
 		if cAssertions.Count > 0 then
 			passed = true
@@ -616,26 +616,29 @@ class aspUnitAssertion
 			dim dimensions, i, j
 			dimensions = numDimensions(obj)
 			
-			result = "["
-			for i = 1 to dimensions
-				if i > 1 then result = result & ", "
-				
-				result = result & "["
-
-				for j = 0 to ubound(obj, i)
+			
+			if dimensions > 1 then
+				for j = 0 to ubound(obj, 2)
 					if j > 0 then result = result & ", "
 					
-					if dimensions > 1 then
-						'result = result & objectValue(obj(i - 1, j))
-					else
-						result = result & objectValue(obj(j))
-					end if
+					redim cols(ubound(obj, 1))
+
+					for i = 0 to ubound(obj, 1)
+						cols(i) = objectValue(obj(i, j))
+					next
+					
+					result = result & "[" & join(cols, ", ") & "]"
+				next
+			else
+				redim lines(ubound(obj))
+				
+				for i = 0 to ubound(obj)
+					lines(i) = objectValue(obj(i))
 				next
 				
-				if dimensions > 1 then result = result & "]"
-			next
+				result = "[" & join(obj, ", ") & "]"
+			end if
 			
-			result = result & "]"
 			
 		else
 			result = obj
