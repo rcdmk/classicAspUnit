@@ -52,8 +52,13 @@ class aspUnit
 	end function
 	
 	public function Run()
-		dim result
+		dim result, testCase
+		
 		set result = new aspUnitTestResult
+		
+		for each testCase in dTestCases
+			results.TestCases.Add testCase
+		next
 		
 		set Run = result
 	end function
@@ -107,6 +112,8 @@ class aspUnitTestCase
 		set test = new aspUnitTestMethod
 		test.Name = testName
 		
+		dTests.add testName, test
+		
 		set AddTest = test
 	end function
 end class
@@ -139,7 +146,7 @@ end class
 class aspUnitTestResult
 	' fields
 	dim cTests, cPassed, cFailed, cErrors
-	
+	dim cTestCases
 	
 	' properties
 	public property get Tests()
@@ -158,6 +165,10 @@ class aspUnitTestResult
 		set Errors = cErrors
 	end property
 	
+	public property get TestCases()
+		set TestCases = cTestCases
+	end property
+	
 	
 	' constructor and desctructor
 	private sub class_initialize()
@@ -165,6 +176,7 @@ class aspUnitTestResult
 		set cPassed = new aspUnitCollection
 		set cFailed = new aspUnitCollection
 		set cErrors = new aspUnitCollection
+		set cTestCases = new aspUnitCollection
 	end sub
 	
 	private sub class_terminate()
@@ -172,6 +184,7 @@ class aspUnitTestResult
 		cPassed.clear()
 		cFailed.clear()
 		cErrors.clear()
+		cTestCases.clear()
 	end sub
 end class
 
@@ -182,7 +195,7 @@ class aspUnitCollection
 	
 	
 	' properties
-	public default property get Collection()
+	public property get Collection()
 		Collection = aCollection
 	end property
 

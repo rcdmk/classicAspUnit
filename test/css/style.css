@@ -7,3 +7,24 @@ body {
 	font-size: 14px;
 }
 
+table, td {
+	border: solid 1px black;
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+table {
+	width: 90%;	
+}
+
+.Passed {
+	background-color: #00AA00;
+}
+
+.Failed {
+	background-color: #AA0000;
+}
+
+.Error {
+	background-color: #AA6600;
+}

@@ -30,23 +30,27 @@ sub testTeardown()
 end sub
 
 
-dim test, testMethod
+dim otest, otestMethod
 
-set test = testContext.addTestCase("User CRUD")
+set otest = testContext.addTestCase("User CRUD")
 
-test.Setup("testSetup")
+otest.Setup("testSetup")
+otest.Teardown("testTeardown")
 
-set testMethod = test.addTest("UserDB is a testDB instance")
+set otestMethod = otest.addTest("UserDB is a testDB instance")
 
-testMethod.AssertExists usersDB
-testMethod.AssertIsA usersDB, "testDB", ""
+otestMethod.AssertExists usersDB
+otestMethod.AssertIsA usersDB, "testDB", ""
 
-test.Teardown("testTeardown")
 
 set results = testContext.run
 
+set otestMethod = nothing
+set otest = nothing
 set usersDB = nothing
 set testContext = nothing
+
+dim testCase, test, testMethod
 %>
 <!DOCTYPE HTML>
 <html lang="en-US">
@@ -58,8 +62,36 @@ set testContext = nothing
 </head>
 <body>
 	<h1>Classic ASP Unit Testing Framework</h1>
-	<h2>Tests: <%= results.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
+	<h2>Test Cases: <%= results.TestCases.Count %>, Tests: <%= results.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
 	
-	
+	<table>
+		<%
+		for each testCase in results.TestCases
+			%>
+			<tr>
+				<th colspan="2"><%= testCase.Name %></th>
+				<th class="<%= testCase.Status %>"><%= testCase.Status %></th>
+			</tr>
+			<%
+			for each test in results.Tests
+				%>
+				<tr>
+					<th colspan="2"><%= test.Name %></th>
+					<th class="<%= test.Status %>"><%= test.Status %></th>
+				</tr>
+				<%
+				for each testMethod in test.TestMethods
+					%>
+					<tr>
+						<td><%= testMethod.Name %></td>
+						<td><%= testMethod.Output %></td>
+						<td class="<%= testMethod.Status %>"><%= testMethod.Status %></td>
+					</tr>
+					<%
+				next
+			next
+		next
+		%>
+	</table>	
 </body>
 </html>
