@@ -1,11 +1,52 @@
-﻿<!--#include file="../aspUnit.class.asp" -->
+﻿<% option explicit %>
+<!--#include file="../aspUnit.class.asp" -->
 <!--#include file="testDB.class.asp" -->
 <%
-dim db, test
+' Helpers
+function createUser(byval id, byval name, byval email)
+	dim user(2,0)
+	
+	user(0, 0) = id
+	user(1, 0) = name
+	user(2, 0) = email
+	
+	createUser = user
+end function
 
-set db = new testDB
-set test = new aspUnit
 
+' Tests
+dim usersDB, testContext, result
+
+set testContext = new aspUnit
+
+sub testSetup()
+	set usersDB = new testDB
+
+	usersDB.TableName = "users"
+end sub
+
+sub testTeardown()
+	set usersDB = nothing
+end sub
+
+
+dim test, testMethod
+
+set test = testContext.addTestCase("User CRUD")
+
+test.Setup("testSetup")
+
+set testMethod = test.addTest("UserDB is a testDB instance")
+
+testMethod.AssertExists usersDB
+testMethod.AssertIsA usersDB, "testDB", ""
+
+test.Teardown("testTeardown")
+
+result = testContext.run
+
+set usersDB = nothing
+set testContext = nothing
 %>
 <!DOCTYPE HTML>
 <html lang="en-US">
@@ -17,6 +58,8 @@ set test = new aspUnit
 </head>
 <body>
 	<h1>Classic ASP Unit Testing Framework</h1>
+	<h2>Tests: <%= result.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
+	
 	
 </body>
 </html>
