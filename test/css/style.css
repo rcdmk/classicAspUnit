@@ -14,7 +14,31 @@ table, td {
 }
 
 table {
-	width: 90%;	
+	width: 90%;
+	background-color: #fff;
+}
+
+th, td {
+	padding: 2px;
+}
+
+th {
+	text-align: left;
+	background-color: #999;
+	color: #fff;
+}
+
+.subtitle {
+	background-color: #DDD;
+}
+
+.status {
+	width: 150px;
+	text-align: right;
+}
+
+.Inconclusive {
+	background-color: #EEEE00;
 }
 
 .Passed {
@@ -23,6 +47,7 @@ table {
 
 .Failed {
 	background-color: #AA0000;
+	color: #fff;
 }
 
 .Error {

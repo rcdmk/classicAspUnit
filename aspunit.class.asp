@@ -21,6 +21,18 @@
 ' OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+' Constants
+const AU_ASSERT_EXISTS = 1
+const AU_ASSERT_NULL = 2
+const AU_ASSERT_EMPTY = 3
+const AU_ASSERT_EQUALS = 4
+const AU_ASSERT_NOT_EQUALS = 5
+const AU_ASSERT_IS_ARRAY = 6
+const AU_ASSERT_IS_OBJECT = 7
+const AU_ASSERT_IS_A = 8
+
+
+' Classes
 class aspUnit
 	' fields
 	dim dTestCases
@@ -48,26 +60,30 @@ class aspUnit
 		set testCase = new aspUnitTestCase
 		testCase.Name = name
 		
+		dTestCases.Add name, testCase
+		
 		set AddTestCase = testCase
 	end function
 	
 	public function Run()
-		dim result, testCase
+		dim results, testCase
 		
-		set result = new aspUnitTestResult
+		set results = new aspUnitTestResult
 		
-		for each testCase in dTestCases
+		for each testCase in dTestCases.Items
+			testCase.Run
 			results.TestCases.Add testCase
 		next
 		
-		set Run = result
+		set Run = results
 	end function
 end class
 
 
 class aspUnitTestCase
 	' fields
-	dim sName, dTests
+	dim sName, sStatus
+	dim dTests
 	dim setupCode, tearDowncode
 	
 	
@@ -80,10 +96,19 @@ class aspUnitTestCase
 		sName = value
 	end property
 
+	public property get Status()
+		Status = sStatus
+	end property
+	
+	public property get Tests()
+		set Tests = dTests
+	end property
+	
 
 	' constructor and destructor
 	private sub class_initialize()
 		set dTests = createObject("Scripting.Dictionary")
+		sStatus = "Inconclusive"
 	end sub
 	
 	private sub class_terminate()
@@ -116,11 +141,33 @@ class aspUnitTestCase
 		
 		set AddTest = test
 	end function
+	
+	public sub Run()
+		dim passed
+		passed = false
+		
+		if dTests.Count > 0 then
+			sStatus = "Passed"
+			
+			for each test in dTests.Items
+				execute setupCode
+				
+				if not test.Run() then
+					sStatus = "Failed"
+				end if
+				
+				execute tearDowncode
+			next
+		end if
+	end sub
 end class
+
+
 
 class aspUnitTestMethod
 	' fields
-	dim sName
+	dim sName, sStatus
+	dim cAssertions, cErrors
 	
 	' properties
 	public property get Name()
@@ -131,38 +178,124 @@ class aspUnitTestMethod
 		sName = value
 	end property
 
+	public property get Status()
+		Status = sStatus
+	end property
+	
+	public property get Output()
+		dim sOutput
+		
+		if cAssertions.Count > 0 then
+			if cErrors.Count > 0 then
+				sOutput = "<li>" & join(cErrors, "</li><li>") & "</li>"
+			else
+				sOutput = "OK"
+			end if
+		else
+			sOutput = "Untested"			
+		end if
+		
+		Output = sOutput
+	end property
+
+	
+	' constructor and destructor
+	private sub class_initialize()
+		sStatus = "Inconclusive"
+		
+		set cAssertions = new aspUnitCollection
+		set cErrors = new aspUnitCollection		
+	end sub
+	
+	private sub class_terminate()
+		cAssertions.Clear
+		cErrors.Clear
+		
+		set cAssertions = nothing
+		set cErrors = nothing
+	end sub
+	
 	
 	' public methods
-	public sub AssertExists(byref obj)
-		
+	public sub AssertExists(byref obj, byval message)
+		addAssertion AU_ASSERT_EXISTS, obj, null, message
 	end sub
 	
 	public sub AssertIsA(byref obj, byval typeName, byval message)
+		addAssertion AU_ASSERT_IS_A, obj, typeName, message
+	end sub
+	
+	public sub AssertEquals(byref obj, byref obj2, byval message)
+		addAssertion AU_ASSERT_EQUALS, obj, obj2, message
+	end sub
+	
+	
+	public function Run()
+		dim assertion, passed, msg
+		passed = false
 		
+		if cAssertions.Count > 0 then
+			passed = true
+			sStatus = "Passed"
+			
+			for each assertion in cAssertions.Collection
+				if not assertion.Run() then
+					passed = false
+					sStatus = "Failed"
+					cErrors.Add assertion.Message
+				end if
+			next
+		end if
+		
+		Run = passed
+	end function
+	
+	
+	' private methods
+	private sub addAssertion(byval mode, byref obj1, byref obj2, byval msg)
+		dim assertion		
+		set assertion = new aspUnitAssertion
+		
+		assertion.Mode = mode
+		assertion.Message = msg
+		
+		if isObject(obj1) then
+			set assertion.Obj1 = obj1
+		else
+			assertion.Obj1 = obj1
+		end if
+		
+		if isObject(obj2) then
+			set assertion.Obj2 = obj2
+		else
+			assertion.Obj2 = obj2
+		end if		
+		
+		cAssertions.Add assertion
 	end sub
 end class
 
 
 class aspUnitTestResult
 	' fields
-	dim cTests, cPassed, cFailed, cErrors
+	dim iTests, iPassed, iFailed, iErrors
 	dim cTestCases
 	
 	' properties
 	public property get Tests()
-		set Tests = cTests
+		Tests = cTestCases.Count
 	end property
 	
 	public property get Passed()
-		set Passed = cPassed
+		Passed = iPassed
 	end property
 	
 	public property get Failed()
-		set Failed = cFailed
+		Failed = iFailed
 	end property
 	
 	public property get Errors()
-		set Errors = cErrors
+		Errors = iErrors
 	end property
 	
 	public property get TestCases()
@@ -172,19 +305,16 @@ class aspUnitTestResult
 	
 	' constructor and desctructor
 	private sub class_initialize()
-		set cTests = new aspUnitCollection
-		set cPassed = new aspUnitCollection
-		set cFailed = new aspUnitCollection
-		set cErrors = new aspUnitCollection
+		iTests = 0
+		iPassed = 0
+		iFailed = 0
+		iErrors = 0
 		set cTestCases = new aspUnitCollection
 	end sub
 	
 	private sub class_terminate()
-		cTests.clear()
-		cPassed.clear()
-		cFailed.clear()
-		cErrors.clear()
 		cTestCases.clear()
+		set cTestCases = nothing
 	end sub
 end class
 
@@ -195,7 +325,7 @@ class aspUnitCollection
 	
 	
 	' properties
-	public property get Collection()
+	public default property get Collection()
 		Collection = aCollection
 	end property
 
@@ -212,6 +342,7 @@ class aspUnitCollection
 	private sub class_terminate()
 		Clear
 	end sub
+	
 	
 	' public methods
 	public sub Add(byref value)
@@ -254,6 +385,7 @@ class aspUnitCollection
 	end function	
 	
 	public sub Clear()
+		dim obj
 		for each obj in aCollection
 			Remove obj
 		next
@@ -274,6 +406,138 @@ class aspUnitCollection
 		loop
 		
 		getIndex = index
+	end function
+end class
+
+
+class aspUnitAssertion
+	' fields
+	dim iMode, sMessage, oObj1, oObj2
+	
+	
+	' properties
+	public property get Mode()
+		Mode = iMode
+	end property
+	
+	public property let Mode(value)
+		iMode = value
+	end property
+	
+	public property get Message()
+		Message = sMessage
+	end property
+	
+	public property let Message(value)
+		sMessage = value
+	end property	
+	
+	public property get Obj1()
+		if isObject(oObj1) then
+			set Obj1 = oObj1
+		else
+			Obj1 = oObj1
+		end if
+	end property
+	
+	public property let Obj1(value)
+		oObj1 = value
+	end property	
+	
+	public property set Obj1(value)
+		set oObj1 = value
+	end property	
+	
+	public property get Obj2()
+		if isObject(oObj2) then
+			set Obj2 = oObj2
+		else
+			Obj2 = oObj2
+		end if
+	end property
+	
+	public property let Obj2(value)
+		oObj2 = value
+	end property	
+	
+	public property set Obj2(value)
+		set oObj2 = value
+	end property
+	
+	
+	' public methods
+	public function Run()
+		dim passed, msg, val1, val2
+		
+		val1 = objectValue(oObj1)
+		val2 = objectValue(oObj2)
+		
+		passed = false
+		
+		select case iMode
+			case AU_ASSERT_EXISTS:
+				if isObject(oObj1) then
+					if typeName(oObj1) <> "Nothing" then
+						passed = true
+					end if
+					
+				elseif not isnull(oObj1) then
+					if oObj1 <> "" then passed = true
+				end if
+				
+				if not passed then
+					if sMessage = "" or isnull(sMessage) then
+						msg = "Object doesn't exists (" & val1 & ")"
+					else
+						msg = replace(sMessage, "{1}", val1)
+					end if
+				end if
+			
+			case AU_ASSERT_IS_A:
+				if typeName(oObj1) = oObj2 then
+					passed = true					
+				
+				else
+					if sMessage = "" or isnull(sMessage) then
+						msg = "Object " & val1 & " is not of type " & val2
+					else
+						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
+					end if
+				end if
+			
+			case AU_ASSERT_EQUALS:
+				if oObj1 = oObj2 then
+					passed = true
+				else
+					if sMessage = "" or isnull(sMessage) then
+						msg = val1 & " is not equals " & val2
+					else
+						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
+					end if
+				end if
+			
+			case default
+				msg = "Invalid assertion mode"
+		end select
+		
+		if not passed then sMessage = msg
+		Run = passed
+	end function
+	
+	
+	private function objectValue(byref obj)
+		dim name
+		name = typeName(obj)
+		
+		if isObject(obj) or name = "Empty" then
+			objectValue = name
+			
+		elseif name = "Array" then
+			objectValue = "[" & join(obj, ", ") & "]"
+		
+		else
+			objectValue = obj
+		end if
 	end function
 end class
 %>

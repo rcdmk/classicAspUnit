@@ -30,27 +30,51 @@ sub testTeardown()
 end sub
 
 
-dim otest, otestMethod
+testSetup
 
+dim otest
 set otest = testContext.addTestCase("User CRUD")
 
 otest.Setup("testSetup")
 otest.Teardown("testTeardown")
 
-set otestMethod = otest.addTest("UserDB is a testDB instance")
+' #####
+dim oTestMethod
+set oTestMethod = otest.addTest("UserDB is a testDB instance")
 
-otestMethod.AssertExists usersDB
-otestMethod.AssertIsA usersDB, "testDB", ""
+oTestMethod.AssertExists usersDB, ""
+oTestMethod.AssertIsA usersDB, "testDB", ""
+
+
+' #####
+set oTestMethod = otest.addTest("UserDB's Table Name is set to users")
+oTestMethod.AssertEquals usersDB.TableName, "users", ""
+
+
+' #####
+set oTestMethod = otest.addTest("UserDB adds a user")
+
+dim oldCount, newUser
+oldCount = usersDB.Count
+
+newUser = createUser(1, "Jhon", "jhon@domain.com")
+
+usersDB.Add newUser
+
+oTestMethod.AssertEquals usersDB.Count, oldCount + 2, ""
 
 
 set results = testContext.run
 
-set otestMethod = nothing
+set oTestMethod = nothing
 set otest = nothing
 set usersDB = nothing
 set testContext = nothing
 
 dim testCase, test, testMethod
+dim testCases, tests, testMethods
+
+set testCases = results.TestCases
 %>
 <!DOCTYPE HTML>
 <html lang="en-US">
@@ -62,33 +86,31 @@ dim testCase, test, testMethod
 </head>
 <body>
 	<h1>Classic ASP Unit Testing Framework</h1>
-	<h2>Test Cases: <%= results.TestCases.Count %>, Tests: <%= results.Tests.Count %>, Passed: <%= results.Passed.Count %>, Failed: <%= results.Failed.Count %>, Error: <%= results.Errors.Count %></h2>
+	<h2>Test Cases: <%= testCases.Count %>, Tests: <%= results.Tests %>, Passed: <%= results.Passed %>, Failed: <%= results.Failed %>, Error: <%= results.Errors %></h2>
 	
 	<table>
+		<tr>
+			<th colspan="3">Test Cases</th>
+		</tr>
 		<%
-		for each testCase in results.TestCases
+		for each testCase in testCases.Collection
 			%>
 			<tr>
-				<th colspan="2"><%= testCase.Name %></th>
-				<th class="<%= testCase.Status %>"><%= testCase.Status %></th>
+				<td colspan="2"><%= testCase.Name %></td>
+				<td class="status <%= testCase.Status %>"><%= testCase.Status %></td>
+			</tr>
+			<tr>
+				<td colspan="3" class="subtitle">Tests:</td>
 			</tr>
 			<%
-			for each test in results.Tests
+			for each test in testCase.Tests.Items
 				%>
 				<tr>
-					<th colspan="2"><%= test.Name %></th>
-					<th class="<%= test.Status %>"><%= test.Status %></th>
+					<td><%= test.Name %></td>
+					<td><%= test.Output %></td>
+					<td class="status <%= test.Status %>"><%= test.Status %></td>
 				</tr>
 				<%
-				for each testMethod in test.TestMethods
-					%>
-					<tr>
-						<td><%= testMethod.Name %></td>
-						<td><%= testMethod.Output %></td>
-						<td class="<%= testMethod.Status %>"><%= testMethod.Status %></td>
-					</tr>
-					<%
-				next
 			next
 		next
 		%>

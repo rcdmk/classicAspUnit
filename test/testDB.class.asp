@@ -18,7 +18,7 @@ class testDB
 	
 	
 	public property get Count()
-		Count = recorCount()
+		Count = recordCount()
 	end property
 	
 	
