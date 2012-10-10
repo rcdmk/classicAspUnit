@@ -54,26 +54,40 @@ oTestMethod.AssertEquals usersDB.TableName, "users", ""
 ' #####
 set oTestMethod = oTest.addTest("UserDB adds a user")
 
-dim oldCount, newUser
+dim oldCount, user
 oldCount = usersDB.Count
 
-newUser = createUser(1, "Jhon", "jhon@domain.com")
-
-usersDB.Add newUser
+user = createUser(1, "Jhon", "jhon@domain.com")
+usersDB.Add user
 
 oTestMethod.AssertEquals usersDB.Count, oldCount + 1, ""
+oTestMethod.AssertEquals usersDB.GetOne(1), user, ""
+
 
 ' #####
-set oTestMethod = oTest.addTest("UserDB returns the added user")
+set oTestMethod = oTest.addTest("UserDB updates the user data")
 
-newUser = createUser(2, "Joe", "joe@domain.com")
+user = usersDB.GetOne(1)
 
-usersDB.Add newUser
+user(1, 0) = "Bob"
 
-' usersDB.GetOne accepts the record index as a parameter
-oTestMethod.AssertEquals usersDB.GetOne(1), newUser, ""
+usersDB.update(user)
+
+oTestMethod.AssertEquals usersDB.GetOne(1), user, ""
 
 
+' #####
+set oTestMethod = oTest.addTest("UserDB deletes a user")
+
+usersDB.Remove(1)
+
+usersDB.update(user)
+
+oTestMethod.AssertEquals usersDB.Count, oldCount, ""
+
+
+
+' #################
 set oTest = testContext.addTestCase("User Login")
 
 

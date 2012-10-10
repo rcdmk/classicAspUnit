@@ -31,6 +31,9 @@ const AU_ASSERT_IS_ARRAY = 6
 const AU_ASSERT_IS_OBJECT = 7
 const AU_ASSERT_IS_A = 8
 
+const AU_ERROR_TEST_CASE_ALREADY_EXISTS = &h800a01c9
+const AU_ERROR_TEST_ALREADY_EXISTS = &h800a01c9
+const AU_ERROR_TEST_METHOD_ALREADY_EXISTS = &h800a01c9
 
 ' Classes
 class aspUnit
@@ -55,14 +58,20 @@ class aspUnit
 	
 	
 	' public methods
-	public function AddTestCase(byval name)
+	public function AddTestCase(byval testCaseName)
 		dim testCase
-		set testCase = new aspUnitTestCase
-		testCase.Name = name
 		
-		dTestCases.Add name, testCase
+		if not dTestCases.Exists(testCaseName) then
+			set testCase = new aspUnitTestCase
+			testCase.Name = testCaseName
+			
+			dTestCases.Add testCaseName, testCase
+		else
+			err.Raise AU_ERROR_TEST_CASE_ALREADY_EXISTS, "Test Case already exists", "A test case with this name aready exists: """ & testCaseName & """"
+		end if
 		
 		set AddTestCase = testCase
+		
 	end function
 	
 	public function Run()
@@ -137,7 +146,11 @@ class aspUnitTestCase
 		set test = new aspUnitTestMethod
 		test.Name = testName
 		
-		dTests.add testName, test
+		if not dTests.exists(testName) then
+			dTests.add testName, test
+		else
+			err.Raise AU_ERROR_TEST_ALREADY_EXISTS, "Test already exists", "A test with this name already exists: """ & testName & """"
+		end if
 		
 		set AddTest = test
 	end function
@@ -254,6 +267,11 @@ class aspUnitTestMethod
 		addAssertion AU_ASSERT_EQUALS, obj, obj2, message
 	end sub
 	
+	public sub AssertNotEquals(byref obj, byref obj2, byval message)
+		addAssertion AU_ASSERT_NOT_EQUALS, obj, obj2, message
+	end sub
+	
+	
 	
 	public function Run()
 		dim assertion, assertionResult, passed, msg
@@ -309,6 +327,229 @@ class aspUnitTestMethod
 		
 		cAssertions.Add assertion
 	end sub
+end class
+
+
+class aspUnitAssertion
+	' fields
+	dim iMode, sMessage, oObj1, oObj2
+	
+	
+	' properties
+	public property get Mode()
+		Mode = iMode
+	end property
+	
+	public property let Mode(value)
+		iMode = value
+	end property
+	
+	public property get Message()
+		Message = sMessage
+	end property
+	
+	public property let Message(value)
+		sMessage = value
+	end property	
+	
+	public property get Obj1()
+		if isObject(oObj1) then
+			set Obj1 = oObj1
+		else
+			Obj1 = oObj1
+		end if
+	end property
+	
+	public property let Obj1(value)
+		oObj1 = value
+	end property	
+	
+	public property set Obj1(value)
+		set oObj1 = value
+	end property	
+	
+	public property get Obj2()
+		if isObject(oObj2) then
+			set Obj2 = oObj2
+		else
+			Obj2 = oObj2
+		end if
+	end property
+	
+	public property let Obj2(value)
+		oObj2 = value
+	end property	
+	
+	public property set Obj2(value)
+		set oObj2 = value
+	end property
+	
+	
+	' public methods
+	public function Run()
+		dim passed, msg, val1, val2
+		
+		val1 = objectValue(oObj1)
+		val2 = objectValue(oObj2)
+		
+		passed = false
+		
+		select case iMode
+			case AU_ASSERT_EXISTS:
+				if isObject(oObj1) then
+					if typeName(oObj1) <> "Nothing" then
+						passed = true
+					end if
+					
+				elseif not isnull(oObj1) then
+					if oObj1 <> "" then passed = true
+				end if
+				
+				if not passed then
+					if sMessage = "" or isnull(sMessage) then
+						msg = "Object doesn't exists (" & val1 & ")"
+					else
+						msg = replace(sMessage, "{1}", val1)
+					end if
+				end if
+			
+			case AU_ASSERT_IS_A:
+				if typeName(oObj1) = oObj2 then
+					passed = true					
+				
+				else
+					if sMessage = "" or isnull(sMessage) then
+						msg = "Object " & val1 & " is not of type " & val2
+					else
+						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
+					end if
+				end if
+			
+			case AU_ASSERT_EQUALS, AU_ASSERT_NOT_EQUALS:
+				if isObject(oObj1) or isObject(oObj2) then
+					if isObject(oObj1) and isObject(oObj2) then
+						if oObj1 is oObj2 then passed = true
+					end if
+				
+				elseif isArray(oObj1) or isArray(oObj2) then
+					if isArray(oObj1) and isArray(oObj2) then
+						dim dimensions1, dimensions2
+						dimensions1 = numDimensions(oObj1)
+						dimensions2 = numDimensions(oObj2)
+						
+						if dimensions1 = dimensions2 then
+							dim i, tmp
+							tmp = true
+							if dimensions1 > 1 then
+								dim j
+								
+								for i = 0 to ubound(oObj1, 2)		
+									for j = 0 to ubound(oObj1, 1)
+										if oObj1(j, i) <> oObj2(j, i) then tmp = false
+									next
+								next
+								
+							elseif ubound(oObj1) = ubound(oObj2) then
+								for i = 0 to ubound(oObj1)
+									if oObj1(i) = oObj2(i) then tmp = false
+								next
+							end if
+							
+							if tmp then passed = true
+						end if
+					end if
+					
+				elseif oObj1 = oObj2 then
+					passed = true
+				end if
+				
+				if iMode = AU_ASSERT_NOT_EQUALS then
+					passed = not passed
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = val1 & " should not be equal to " & val2
+						else
+							msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
+						end if
+					end if
+
+				else
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = val1 & " should be equal to " & val2
+						else
+							msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
+						end if
+					end if
+				end if
+			
+			case default
+				msg = "Invalid assertion mode"
+		end select
+		
+		if not passed then sMessage = msg
+		Run = passed
+	end function
+	
+	
+	private function objectValue(byref obj)
+		dim name, result
+		name = typeName(obj)
+		
+		if isObject(obj) or name = "Empty" then
+			result = name
+			
+		elseif name = "Variant()" then
+			dim dimensions, i, j
+			dimensions = numDimensions(obj)
+			
+			
+			if dimensions > 1 then
+				for j = 0 to ubound(obj, 2)
+					if j > 0 then result = result & ", "
+					
+					redim cols(ubound(obj, 1))
+
+					for i = 0 to ubound(obj, 1)
+						cols(i) = objectValue(obj(i, j))
+					next
+					
+					result = result & "[" & join(cols, ", ") & "]"
+				next
+			else
+				redim lines(ubound(obj))
+				
+				for i = 0 to ubound(obj)
+					lines(i) = objectValue(obj(i))
+				next
+				
+				result = "[" & join(obj, ", ") & "]"
+			end if
+			
+			
+		else
+			result = obj
+		end if
+		
+		objectValue = result
+	end function
+	
+	
+	private function numDimensions(byref arr) 
+		dim dimensions
+		dimensions = 0 
+		
+		on error resume next
+		
+		do while err.number = 0
+			dimensions = dimensions + 1
+			ubound arr, dimensions
+		loop
+		on error goto 0
+		
+		NumDimensions = dimensions - 1
+	end function
 end class
 
 
@@ -465,201 +706,6 @@ class aspUnitCollection
 		loop
 		
 		getIndex = index
-	end function
-end class
-
-
-class aspUnitAssertion
-	' fields
-	dim iMode, sMessage, oObj1, oObj2
-	
-	
-	' properties
-	public property get Mode()
-		Mode = iMode
-	end property
-	
-	public property let Mode(value)
-		iMode = value
-	end property
-	
-	public property get Message()
-		Message = sMessage
-	end property
-	
-	public property let Message(value)
-		sMessage = value
-	end property	
-	
-	public property get Obj1()
-		if isObject(oObj1) then
-			set Obj1 = oObj1
-		else
-			Obj1 = oObj1
-		end if
-	end property
-	
-	public property let Obj1(value)
-		oObj1 = value
-	end property	
-	
-	public property set Obj1(value)
-		set oObj1 = value
-	end property	
-	
-	public property get Obj2()
-		if isObject(oObj2) then
-			set Obj2 = oObj2
-		else
-			Obj2 = oObj2
-		end if
-	end property
-	
-	public property let Obj2(value)
-		oObj2 = value
-	end property	
-	
-	public property set Obj2(value)
-		set oObj2 = value
-	end property
-	
-	
-	' public methods
-	public function Run()
-		dim passed, msg, val1, val2
-		
-		val1 = objectValue(oObj1)
-		val2 = objectValue(oObj2)
-		
-		passed = false
-		
-		select case iMode
-			case AU_ASSERT_EXISTS:
-				if isObject(oObj1) then
-					if typeName(oObj1) <> "Nothing" then
-						passed = true
-					end if
-					
-				elseif not isnull(oObj1) then
-					if oObj1 <> "" then passed = true
-				end if
-				
-				if not passed then
-					if sMessage = "" or isnull(sMessage) then
-						msg = "Object doesn't exists (" & val1 & ")"
-					else
-						msg = replace(sMessage, "{1}", val1)
-					end if
-				end if
-			
-			case AU_ASSERT_IS_A:
-				if typeName(oObj1) = oObj2 then
-					passed = true					
-				
-				else
-					if sMessage = "" or isnull(sMessage) then
-						msg = "Object " & val1 & " is not of type " & val2
-					else
-						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
-					end if
-				end if
-			
-			case AU_ASSERT_EQUALS:
-				if isObject(oObj1) or isObject(oObj2) then
-					if isObject(oObj1) and isObject(oObj2) then
-						if oObj1 is oObj2 then passed = true
-					end if
-				
-				elseif isArray(oObj1) or isObject(oObj2) then
-					if isArray(oObj1) and isObject(oObj2) then
-						if ubound(oObj1) = ubound(oObj2) then
-							dim i, tmp
-							tmp = false
-							
-							for i = 0 to ubound(oObj1)
-								if oObj1 = oObj2 then tmp = true
-							next
-							
-							if tmp = true then passed = true
-						end if
-					end if
-					
-				elseif oObj1 = oObj2 then
-					passed = true
-				end if
-				
-				if not passed then
-					if sMessage = "" or isnull(sMessage) then
-						msg = val1 & " is not equals " & val2
-					else
-						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
-					end if
-				end if
-			
-			case default
-				msg = "Invalid assertion mode"
-		end select
-		
-		if not passed then sMessage = msg
-		Run = passed
-	end function
-	
-	
-	private function objectValue(byref obj)
-		dim name, result
-		name = typeName(obj)
-		
-		if isObject(obj) or name = "Empty" then
-			result = name
-			
-		elseif name = "Variant()" then
-			dim dimensions, i, j
-			dimensions = numDimensions(obj)
-			
-			
-			if dimensions > 1 then
-				for j = 0 to ubound(obj, 2)
-					if j > 0 then result = result & ", "
-					
-					redim cols(ubound(obj, 1))
-
-					for i = 0 to ubound(obj, 1)
-						cols(i) = objectValue(obj(i, j))
-					next
-					
-					result = result & "[" & join(cols, ", ") & "]"
-				next
-			else
-				redim lines(ubound(obj))
-				
-				for i = 0 to ubound(obj)
-					lines(i) = objectValue(obj(i))
-				next
-				
-				result = "[" & join(obj, ", ") & "]"
-			end if
-			
-			
-		else
-			result = obj
-		end if
-		
-		objectValue = result
-	end function
-	
-	private function NumDimensions(byref arr) 
-		dim dimensions
-		dimensions = 0 
-		
-		on error resume next
-		
-		do while err.number = 0
-			dimensions = dimensions + 1
-			ubound arr, dimensions
-		loop
-		on error goto 0
-		
-		NumDimensions = dimensions - 1
 	end function
 end class
 %>
