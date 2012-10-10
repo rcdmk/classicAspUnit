@@ -91,6 +91,21 @@ oTestMethod.AssertEquals usersDB.Count, oldCount, ""
 set oTest = testContext.addTestCase("User Login")
 
 
+
+' #################
+set oTest = testContext.addTestCase("Problematic tests")
+
+set oTestMethod = oTest.addTest("This should be failed")
+oTestMethod.AssertNotEquals 1, 1, ""
+
+' #####
+set oTestMethod = oTest.addTest("This should be inconclusive")
+
+' #####
+set oTestMethod = oTest.addTest("This should be an error")
+oTestMethod.AssertNull "", ""
+
+
 testTeardown()
 
 set results = testContext.run

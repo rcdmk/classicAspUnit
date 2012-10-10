@@ -22,14 +22,18 @@
 
 
 ' Constants
-const AU_ASSERT_EXISTS = 1
-const AU_ASSERT_NULL = 2
-const AU_ASSERT_EMPTY = 3
-const AU_ASSERT_EQUALS = 4
-const AU_ASSERT_NOT_EQUALS = 5
-const AU_ASSERT_IS_ARRAY = 6
-const AU_ASSERT_IS_OBJECT = 7
-const AU_ASSERT_IS_A = 8
+const AU_ASSERT_TRUE 			= 0
+const AU_ASSERT_FALSE 			= 1
+const AU_ASSERT_EXISTS 			= 2
+const AU_ASSERT_NULL 			= 3
+const AU_ASSERT_NOT_NULL 		= 4
+const AU_ASSERT_EMPTY 			= 5
+const AU_ASSERT_NOT_EMPTY 		= 6
+const AU_ASSERT_EQUALS 			= 7
+const AU_ASSERT_NOT_EQUALS 		= 8
+const AU_ASSERT_IS_A 			= 9
+const AU_ASSERT_IS_VALID 		= 10
+const AU_ASSERT_IS_NOT_VALID 	= 11
 
 const AU_ERROR_TEST_CASE_ALREADY_EXISTS = &h800a01c9
 const AU_ERROR_TEST_ALREADY_EXISTS = &h800a01c9
@@ -255,8 +259,32 @@ class aspUnitTestMethod
 	
 	
 	' public methods
+	public sub AssertTrue(byref obj, byval message)
+		addAssertion AU_ASSERT_TRUE, obj, null, message
+	end sub
+	
+	public sub AssertFalse(byref obj, byval message)
+		addAssertion AU_ASSERT_FALSE, obj, null, message
+	end sub
+	
 	public sub AssertExists(byref obj, byval message)
 		addAssertion AU_ASSERT_EXISTS, obj, null, message
+	end sub
+	
+	public sub AssertNull(byref obj, byval message)
+		addAssertion AU_ASSERT_NULL, obj, null, message
+	end sub
+	
+	public sub AssertNotNull(byref obj, byval message)
+		addAssertion AU_ASSERT_NOT_NULL, obj, null, message
+	end sub
+	
+	public sub AssertEmpty(byref obj, byval message)
+		addAssertion AU_ASSERT_EMPTY, obj, null, message
+	end sub
+	
+	public sub AssertNotEmpty(byref obj, byval message)
+		addAssertion AU_ASSERT_NOT_EMPTY, obj, null, message
 	end sub
 	
 	public sub AssertIsA(byref obj, byval typeName, byval message)
@@ -270,6 +298,11 @@ class aspUnitTestMethod
 	public sub AssertNotEquals(byref obj, byref obj2, byval message)
 		addAssertion AU_ASSERT_NOT_EQUALS, obj, obj2, message
 	end sub
+	
+	public sub AssertIsValid(byref obj, byref obj2, byval message)
+		addAssertion AU_ASSERT_NOT_EQUALS, obj, obj2, message
+	end sub
+	
 	
 	
 	
@@ -395,6 +428,32 @@ class aspUnitAssertion
 		passed = false
 		
 		select case iMode
+			case AU_ASSERT_TRUE, AU_ASSERT_FALSE:
+				if oObj1 = true then
+					passed = true
+				end if
+				
+				if iMode = AU_ASSERT_FALSE then
+					passed = not passed
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = "Should be FALSE"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				else
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = "Should be TRUE"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+					end if
+				
 			case AU_ASSERT_EXISTS:
 				if isObject(oObj1) then
 					if typeName(oObj1) <> "Nothing" then
@@ -413,13 +472,94 @@ class aspUnitAssertion
 					end if
 				end if
 			
+			case AU_ASSERT_IS_VALID, AU_ASSERT_IS_NOT_VALID:
+				if isEmpty(oObj1) or isnull(oObj1) then
+					passed = true
+					
+				elseif isObject(oObj1) or isArray(oObj1) then
+					if typeName(oObj1) = "Nothing" then passed = true
+					
+				elseif trim(oObj1) = "" then
+					passed = true
+				end if
+				
+				if iMode = AU_ASSERT_IS_VALID then
+					passed = not passed
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should have a valid value (eg.: not empty, not null nor blank)"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				else
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should not have a valid value (eg.: empty, null or blank)"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				end if
+			
+			case AU_ASSERT_EMPTY, AU_ASSERT_NOT_EMPTY:
+				if isEmpty(oObj1) then
+					passed = true
+				elseif not isObject(oObj1) then
+					if oObj1 = "" then passed = true
+				end if
+				
+				if iMode = AU_ASSERT_NOT_EMPTY then
+					passed = not passed
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should not be empty"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				else
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should be empty"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				end if
+			
+			case AU_ASSERT_NULL, AU_ASSERT_NOT_NULL:
+				if isNull(oObj1) then passed = true
+				
+				if iMode = AU_ASSERT_NOT_NULL then
+					passed = not passed
+					
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should not be null"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				else
+					if not passed then
+						if sMessage = "" or isnull(sMessage) then
+							msg = """" & val1 & """ should be null"
+						else
+							msg = replace(sMessage, "{1}", val1)
+						end if
+					end if
+				end if
+			
 			case AU_ASSERT_IS_A:
 				if typeName(oObj1) = oObj2 then
 					passed = true					
 				
 				else
 					if sMessage = "" or isnull(sMessage) then
-						msg = "Object " & val1 & " is not of type " & val2
+						msg = """" & val1 & """ is not of type """ & val2 & """"
 					else
 						msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
 					end if
@@ -468,7 +608,7 @@ class aspUnitAssertion
 					
 					if not passed then
 						if sMessage = "" or isnull(sMessage) then
-							msg = val1 & " should not be equal to " & val2
+							msg = "Should not be equal to """ & val2 & """"
 						else
 							msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
 						end if
@@ -477,7 +617,7 @@ class aspUnitAssertion
 				else
 					if not passed then
 						if sMessage = "" or isnull(sMessage) then
-							msg = val1 & " should be equal to " & val2
+							msg = """" & val1 & """ should be equal to """ & val2 & """"
 						else
 							msg = replace(replace(sMessage, "{1}", val1), "{2}", val2)
 						end if
