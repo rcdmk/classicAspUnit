@@ -1,0 +1,71 @@
+﻿@charset "UTF-8";
+
+body {
+	margin: 10px;
+	background-color: #F0F9FF;
+	font-family: arial, helvetica, sans-serif;
+	font-size: 14px;
+}
+
+table, td {
+	border: solid 1px black;
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+table {
+	width: 90%;
+	background-color: #fff;
+}
+
+th, td {
+	padding: 3px;
+}
+
+th {
+	text-align: left;
+	background-color: #999;
+	color: #fff;
+	font-size: 16px;
+}
+
+.right {
+	text-align: right;
+}
+
+.indent {
+	width: 30px;
+	background-color: #DDD;
+}
+
+.title {
+	font-weight: bold;
+}
+
+.subtitle {
+	background-color: #DDD;
+	font-weight: bold;
+}
+
+.status {
+	width: 150px;
+	text-align: right;
+	color: #fff;
+}
+
+.Inconclusive {
+	background-color: #EEEE00;
+	color: #333;
+}
+
+.Passed {
+	background-color: #00AA00;
+}
+
+.Failed {
+	background-color: #AA0000;
+}
+
+.Error {
+	background-color: #EE9900;
+}
