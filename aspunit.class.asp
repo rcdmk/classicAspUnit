@@ -1,7 +1,7 @@
 ﻿<%
-' aspUnit testing framework class
+' aspUnit testing framework class v0.9
 ' By RCDMK - rcdmk@rcdmk.com
-
+'
 ' The MIT License (MIT)
 ' Copyright (c) 2012 RCDMK - rcdmk@rcdmk.com
 '
@@ -316,7 +316,7 @@ class aspUnitTestMethod
 			passed = true
 			sStatus = "Passed"
 			
-			for each assertion in cAssertions.Collection
+			for each assertion in cAssertions.Items
 				assertionResult = assertion.Run()
 				
 				if err.number <> 0 then
@@ -739,7 +739,7 @@ class aspUnitTestResult
 	public sub Update()
 		dim testCase, test
 		
-		for each testCase in cTestCases.Collection
+		for each testCase in cTestCases.Items
 			for each test in testCase.Tests.Items
 				iTests = iTests + 1
 				
@@ -765,8 +765,8 @@ class aspUnitCollection
 	
 	
 	' properties
-	public default property get Collection()
-		Collection = aCollection
+	public default property get Items()
+		Items = aCollection
 	end property
 
 	public property get Count()

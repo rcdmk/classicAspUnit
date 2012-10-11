@@ -35,8 +35,8 @@ testSetup()
 dim oTest
 set oTest = testContext.addTestCase("User Administration")
 
-'oTest.Setup("testSetup")
-'oTest.Teardown("testTeardown")
+oTest.Setup("testSetup")
+oTest.Teardown("testTeardown")
 
 ' #####
 dim oTestMethod
@@ -103,7 +103,7 @@ set oTestMethod = oTest.addTest("This should be inconclusive")
 
 ' #####
 set oTestMethod = oTest.addTest("This should be an error")
-oTestMethod.AssertNull "", ""
+oTestMethod.AssertEmpty Array(1), ""
 
 
 testTeardown()
@@ -117,9 +117,6 @@ set usersDB = nothing
 set testContext = nothing
 
 dim testCase, test, testMethod
-dim testCases, tests, testMethods
-
-set testCases = results.TestCases
 %>
 <!DOCTYPE HTML>
 <html lang="en-US">
@@ -131,7 +128,7 @@ set testCases = results.TestCases
 </head>
 <body>
 	<h1>Classic ASP Unit Testing Framework</h1>
-	<h2>Test Cases: <%= testCases.Count %>, Tests: <%= results.Tests %>, Passed: <%= results.Passed %>, Failed: <%= results.Failed %>, Error: <%= results.Errors %></h2>
+	<h2>Test Cases: <%= results.TestCases.Count %>, Tests: <%= results.Tests %>, Passed: <%= results.Passed %>, Failed: <%= results.Failed %>, Error: <%= results.Errors %></h2>
 	
 	<table>
 		<tr>
@@ -139,8 +136,8 @@ set testCases = results.TestCases
 			<th class="right">Status</th>
 		</tr>
 		<%
-		if testCases.Count > 0 then
-			for each testCase in testCases.Collection
+		if results.TestCases.Count > 0 then
+			for each testCase in results.TestCases.Items
 				%>
 				<tr class="title">
 					<td colspan="3"><%= testCase.Name %></td>
