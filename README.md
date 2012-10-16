@@ -46,13 +46,13 @@ This would work too:
 
 	oTest.Setup("myGlobalObject.MyMethod(1, ""param2"", true)")
 	
-> **Warning:** This uses `Execute` to call the code and will accpect any executable code string like `"myVar = 1" or "myFunction() : myOtherFunction()"`
+> **Warning:** This uses `Execute` to run the code and will accpect any executable code string like `"myVar = 1"` or `"myFunction() : myOtherFunction()"`
 
 
 To run and get the results of the tests:
 
 	set results = testContext.run
-	results.Update ' This will update the test counters of the object
+	results.Update ' This will update the test counters for passed, failed and errors
 
 Then you can have access to the results and write any view you want:
 
@@ -68,8 +68,8 @@ Then you can have access to the results and write any view you want:
 		
 		' loop the tests
 		for each test in testCase.Tests.Items
-			Response.Status "--> Test: " & test.Name & "<br>"
-			Response.Status "----> " & test.Output & "(" & test.Status & ")<br>"
+			Response.Write "--> Test: " & test.Name & "<br>"
+			Response.Write "----> " & test.Output & "(" & test.Status & ")<br>"
 		next
 	next
 	
