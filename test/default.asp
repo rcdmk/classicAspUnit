@@ -67,9 +67,6 @@ oTestMethod.AssertEquals usersDB.GetOne(1), user, ""
 ' #####
 set oTestMethod = oTest.addTest("UserDB updates the user data")
 
-user = createUser(1, "Jhon", "jhon@domain.com")
-usersDB.Add user
-
 user = usersDB.GetOne(1)
 
 user(1, 0) = "Bob"
@@ -84,18 +81,15 @@ set oTestMethod = oTest.addTest("UserDB deletes a user")
 
 oldCount = usersDB.Count
 
-user = createUser(1, "Jhon", "jhon@domain.com")
-usersDB.Add user
-
 usersDB.Remove(1)
 
-oTestMethod.AssertEquals usersDB.Count, oldCount, ""
+oTestMethod.AssertEquals usersDB.Count, oldCount - 1, ""
 
 
 
 ' #################
 set oTest = testContext.addTestCase("User Login")
-
+' Not adding any assertions make it inconclusive
 
 
 ' #################
